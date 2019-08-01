@@ -19,7 +19,6 @@ from settings import SKYPE_SLACK_WRAPPER
 class SkypePing(SkypeEventLoop):
 	_ids_reg = {}
 
-
 	def __init__(self, username, password):
 		super(SkypePing, self).__init__(username, password)
 
@@ -33,6 +32,37 @@ class SkypePing(SkypeEventLoop):
 			nick_regex = '>{}<'.format(SKY_USERNAME_NICK)
 			result_2 = re.search(nick_regex, content)
 		return result_1 or result_2
+
+	@staticmethod
+	def format_at_msg(content):
+		if 'at' in content:
+			inside_msg = re.findall(r'>(.*)<.*>(.*)', content)[0]
+			return '*@{}* {}'.format(inside_msg[0], inside_msg[1])
+		return content
+
+	def format_msg_slack(self, content):
+
+		quote_msg = re.findall(r'</legacyquote>(.*)<legacyquote>', content)
+		if quote_msg:
+			author = re.findall(r'authorname="([a-zA-Z ]*)"', content)[0]
+			timestamp = float(re.findall(r'timestamp="([0-9 ]+)"', content)[0])
+			time_format = datetime.datetime.fromtimestamp(timestamp).strftime('%Y/%m/%d at %I:%M %p')
+			complement = re.findall(r'</quote>(.*)', content)[0]
+			complement = self.format_at_msg(complement)
+
+			text_quote = '> {quote} \n `{author}, {time_format}` \n {complement}'.format(
+				quote=self.format_at_msg(quote_msg[0]),
+				author=author,
+				time_format=time_format,
+				complement=complement,
+			)
+
+		else:
+			text_quote = self.format_at_msg(content)
+
+		# change link format
+		text_quote = re.sub('<a|href="|">h(.*)</a', '', text_quote)
+		return text_quote
 
 	def ram_memory(self, sub, msg_id, rw_type):
 		'''
@@ -82,7 +112,7 @@ class SkypePing(SkypeEventLoop):
 		return True
 
 	def fw_slack(self, msg, subject, group_name=None, channel=SLACK_CHANNEL):
-		content = msg.content
+		content = self.format_msg_slack(msg.content)
 		text = '*{}* wrote:  \n {}'.format(subject, content)
 		if group_name:
 			text = '*{}* wrote in *{}*:  \n {}'.format(
