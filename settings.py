@@ -1,4 +1,5 @@
-# settings 
+# -*- coding: utf-8 -*-
+# settings
 import os
 
 # time expire

@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 import datetime
 import re
 import subprocess
@@ -175,8 +175,6 @@ class SkypePing(SkypeEventLoop):
 
 			logger.info(str(event.msg.content))
 			logger.info('******************')
-			print(event.msg.content)
-			print('******************')
 
 			if group_name:
 				response_type = 'auto_hi_group'
@@ -206,10 +204,6 @@ class SkypePing(SkypeEventLoop):
 
 				if SLACK_CHANNEL_PERSONAL:
 					self.fw_slack(event.msg, subject, group_name, channel=SLACK_CHANNEL_PERSONAL)
-
-			print('---%%%%%%%----')
-			print(self._ids_reg)
-			print('---%%%%%%%----')
 
 			logger.debug(str(self._ids_reg))
 			logger.debug('---%%%%%%%----')
