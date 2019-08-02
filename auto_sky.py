@@ -1,26 +1,42 @@
 
-import re
-import requests
 import datetime
-from skpy import Skype
+import re
+import subprocess
+import sys
+import os
+import traceback
+
+import logzero
+import requests
+from logzero import logger
 from skpy import SkypeEventLoop
 from skpy import SkypeNewMessageEvent
 
-from settings import SKY_PASSWORD, SKY_MSG_RESPONSE_AT, EXPIRE_MINUTES, SLACK_CHANNEL_PERSONAL, SKY_USERNAME_NICK
-from settings import SLACK_CHANNEL
-from settings import SLACK_BOT_ICON
-from settings import SKY_MSG_RESPONSE
-from settings import SKY_USERNAME
-from settings import SLACK_WEBHOOK
-from settings import SLACK_BOT_USERNAME
 from settings import SKYPE_SLACK_WRAPPER
+from settings import SKY_MSG_RESPONSE
+from settings import SKY_PASSWORD, SKY_MSG_RESPONSE_AT, EXPIRE_MINUTES, SLACK_CHANNEL_PERSONAL, SKY_USERNAME_NICK
+from settings import SKY_USERNAME
+from settings import SLACK_BOT_ICON
+from settings import SLACK_BOT_USERNAME
+from settings import SLACK_CHANNEL
+from settings import SLACK_WEBHOOK
 
 
 class SkypePing(SkypeEventLoop):
 	_ids_reg = {}
 
 	def __init__(self, username, password):
-		super(SkypePing, self).__init__(username, password)
+		# Setup rotating logfile with 3 rotations, each with a maximum filesize of 1MB:
+		self.log_path = '/tmp/skype_log.log'
+		self.username = username
+		self.password = password
+		logzero.logfile(self.log_path, maxBytes=1e6, backupCount=3)
+
+	def start(self):
+		print('sending credentials')
+		super(SkypePing, self).__init__(self.username, self.password)
+		print('connect ok')
+		self.loop()
 
 	@staticmethod
 	def check_regex(content):
@@ -152,8 +168,11 @@ class SkypePing(SkypeEventLoop):
 			sky_msg = SKY_MSG_RESPONSE.replace('@user', subject)
 			sky_alternate_msg = SKY_MSG_RESPONSE_AT.replace('@user', subject)
 
+			logger.info(str(event.msg.content))
+			logger.info('******************')
 			print(event.msg.content)
 			print('******************')
+
 			if group_name:
 				response_type = 'auto_hi_group'
 
@@ -187,13 +206,52 @@ class SkypePing(SkypeEventLoop):
 			print(self._ids_reg)
 			print('---%%%%%%%----')
 
+			logger.debug(str(self._ids_reg))
+			logger.debug('---%%%%%%%----')
 
-def auto_reply():
-	print('sending credentials')
+
+def auto_reply(argv):
 	sk_ping = SkypePing(SKY_USERNAME, SKY_PASSWORD)
-	print('connect ok')
-	sk_ping.loop()
+
+	args = ' '.join(argv)
+	print(args)
+	log, tail, path = False, False, False
+
+	if re.search(r'-log(?:\s+|$)', args):
+		log = True
+
+	if re.search(r' -tail(?:\s+|$)', args):
+		tail = True
+
+	if re.search(r' -path(?:\s+|$)', args):
+		path = True
+
+	if log:
+		log_path = sk_ping.log_path
+		if path:
+			print(log_path)
+		elif not os.path.exists(log_path):
+			print('file not found')
+		elif tail:
+			command = 'tail -f {}'.format(sk_ping.log_path)
+			process = subprocess.Popen(command.split())
+			output, error = process.communicate()
+		else:
+			command = 'cat {}'.format(sk_ping.log_path)
+			process = subprocess.Popen(command.split())
+			output, error = process.communicate()
+		return print('--- cmd---')
+
+	sk_ping.start()
 
 
 if __name__ == '__main__':
-	auto_reply()
+	try:
+		auto_reply(sys.argv)
+	except NameError:
+		exc_type, exc_value, exc_traceback = sys.exc_info()
+		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+		error = ''.join('!! ' + line for line in lines)
+		logger.error(error)
+		print(error)
+
