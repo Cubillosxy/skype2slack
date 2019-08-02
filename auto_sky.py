@@ -51,22 +51,22 @@ class SkypePing(SkypeEventLoop):
 
 	@staticmethod
 	def format_at_msg(content):
-		if 'at' in content:
-			inside_msg = re.findall(r'>(.*)<.*>(.*)', content)[0]
-			return '*@{}* {}'.format(inside_msg[0], inside_msg[1])
+		content = re.sub(r'<at.id="[a-zA-Z0-9:\*\. ]+">', '*@', content)
+		content = re.sub(r'</at>', '*', content)
 		return content
 
 	def format_msg_slack(self, content):
 
 		quote_msg = re.findall(r'</legacyquote>(.*)<legacyquote>', content)
-		if quote_msg:
+		quote_msg_2 = re.findall(r'<legacyquote>(.*)</legacyquote>', content)
+		if quote_msg or quote_msg_2:
 			author = re.findall(r'authorname="([a-zA-Z ]*)"', content)[0]
 			timestamp = float(re.findall(r'timestamp="([0-9 ]+)"', content)[0])
 			time_format = datetime.datetime.fromtimestamp(timestamp).strftime('%Y/%m/%d at %I:%M %p')
 			complement = re.findall(r'</quote>(.*)', content)[0]
 			complement = self.format_at_msg(complement)
 
-			text_quote = '> {quote} \n `{author}, {time_format}` \n {complement}'.format(
+			text_quote = '>>> _{quote}_ \n `{author}, {time_format}` \n {complement}'.format(
 				quote=self.format_at_msg(quote_msg[0]),
 				author=author,
 				time_format=time_format,
@@ -77,7 +77,12 @@ class SkypePing(SkypeEventLoop):
 			text_quote = self.format_at_msg(content)
 
 		# change link format
-		text_quote = re.sub('<a|href="|">h(.*)</a', '', text_quote)
+		text_quote = re.sub(r'<a|href="|">(https?://)?[a-z\.0-9/_-]+</a>', '', text_quote)
+
+		# remove skype emojis :
+		text_quote = re.sub(r'<ss.[a-z=">\(]+\)</ss>', '~emoji~', text_quote)
+
+		# TODO: replace skype emojis for slack
 		return text_quote
 
 	def ram_memory(self, sub, msg_id, rw_type):
@@ -215,7 +220,7 @@ def auto_reply(argv):
 
 	args = ' '.join(argv)
 	print(args)
-	log, tail, path = False, False, False
+	log, tail, path, clear = False, False, False, False
 
 	if re.search(r'-log(?:\s+|$)', args):
 		log = True
@@ -226,6 +231,9 @@ def auto_reply(argv):
 	if re.search(r' -path(?:\s+|$)', args):
 		path = True
 
+	if re.search(r' -clear(?:\s+|$)', args):
+		clear = True
+
 	if log:
 		log_path = sk_ping.log_path
 		if path:
@@ -234,6 +242,11 @@ def auto_reply(argv):
 			print('file not found')
 		elif tail:
 			command = 'tail -f {}'.format(sk_ping.log_path)
+			process = subprocess.Popen(command.split())
+			output, error = process.communicate()
+		elif clear:
+			backup_name = 'log_file_{}'.format(datetime.datetime.utcnow().date())
+			command = 'cp {0} /tmp/{1} && rm {0} ; touch {0}'.format(sk_ping.log_path, backup_name)
 			process = subprocess.Popen(command.split())
 			output, error = process.communicate()
 		else:

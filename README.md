@@ -10,7 +10,7 @@
 
 Reply msg from skype to Slack  `alfa`
 
-![bot-preview](https://github.com/Cubillosxy/skypetoslack/blob/master/library/skype-bot.png)
+![bot-preview](https://github.com/Cubillosxy/skype2slack/blob/master/library/skype-bot.png)
 
 - config [incoming webhook in slack] (https://api.slack.com/incoming-webhooks)
 - config your `local_settings.py`
