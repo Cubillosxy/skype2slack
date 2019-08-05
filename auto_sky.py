@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import re
+import shutil
 import subprocess
 import sys
 import os
@@ -27,7 +28,8 @@ class SkypePing(SkypeEventLoop):
 
 	def __init__(self, username, password):
 		# Setup rotating logfile with 3 rotations, each with a maximum filesize of 1MB:
-		self.log_path = '/tmp/skype_log.log'
+		self.log_filename = 'skype_log.log'
+		self.log_path = '/tmp/{}'.format(self.log_filename)
 		self.username = username
 		self.password = password
 		logzero.logfile(self.log_path, maxBytes=1e6, backupCount=3)
@@ -51,7 +53,7 @@ class SkypePing(SkypeEventLoop):
 
 	@staticmethod
 	def format_at_msg(content):
-		content = re.sub(r'<at.id="[a-zA-Z0-9:\*\. ]+">', '*@', content)
+		content = re.sub(r'<at.id="[a-zA-Z0-9_:\*\. \-]+">', '*@', content)
 		content = re.sub(r'</at>', '*', content)
 		return content
 
@@ -81,6 +83,12 @@ class SkypePing(SkypeEventLoop):
 
 		# remove skype emojis :
 		text_quote = re.sub(r'<ss.[a-z=">\(]+\)</ss>', '~emoji~', text_quote)
+
+		# format <b>  msg
+		text_quote = re.sub(r'<b raw_pre="\*" raw_post="\*">|</b>', '*', text_quote)
+
+		# format <i> _ msg
+		text_quote = re.sub(r'<i raw_pre="_" raw_post="_">|</i>', '_', text_quote)
 
 		# TODO: replace skype emojis for slack
 		return text_quote
@@ -152,7 +160,7 @@ class SkypePing(SkypeEventLoop):
 			'username': SLACK_BOT_USERNAME,
 			'icon_url': SLACK_BOT_ICON,
 			'channel': channel,
-			'text': text
+			'text': text,
 		}
 
 		response = requests.post(SLACK_WEBHOOK, json=payload)
@@ -238,11 +246,14 @@ def auto_reply(argv):
 			command = 'tail -f {}'.format(sk_ping.log_path)
 			process = subprocess.Popen(command.split())
 			output, error = process.communicate()
+			
 		elif clear:
-			backup_name = 'log_file_{}'.format(datetime.datetime.utcnow().date())
-			command = 'cp {0} /tmp/{1} && rm {0} ; touch {0}'.format(sk_ping.log_path, backup_name)
-			process = subprocess.Popen(command.split())
-			output, error = process.communicate()
+			backup_name = 'log_file_{}.log'.format(datetime.datetime.utcnow().date())
+			backup_path = '/tmp/{}'.format(backup_name)
+			shutil.copy(sk_ping.log_path, backup_path)
+			# clear
+			open(sk_ping.log_path, 'w').close()
+
 		else:
 			command = 'cat {}'.format(sk_ping.log_path)
 			process = subprocess.Popen(command.split())
@@ -255,7 +266,11 @@ def auto_reply(argv):
 if __name__ == '__main__':
 	try:
 		auto_reply(sys.argv)
-	except NameError:
+
+	except KeyboardInterrupt:
+		pass
+
+	except:
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
 		error = ''.join('!! ' + line for line in lines)
