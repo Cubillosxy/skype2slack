@@ -54,7 +54,7 @@ class SkypePing(SkypeEventLoop):
 	@staticmethod
 	def write_log(content, level='info'):
 		try:
-			getattr(logger, level)(content)
+			getattr(logger, level)(content.encode('utf-8'))
 		except:
 			logger.error('error trying to write, "{}"'.format(level))
 
@@ -293,6 +293,6 @@ if __name__ == '__main__':
 	except:
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-		error = ''.join('!! ' + line for line in lines)
+		error = (''.join('!! ' + line for line in lines)).encode('utf-8')
 		logger.error(error)
 
