@@ -1,4 +1,4 @@
-﻿﻿MYO+PYTHON+BEBOP 
+﻿Skype2Slack 
 =========
 <p align="center">
   <a href="https://opensource.org/licenses/MIT" alt="License: MIT">
