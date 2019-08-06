@@ -35,9 +35,9 @@ class SkypePing(SkypeEventLoop):
 		logzero.logfile(self.log_path, maxBytes=1e6, backupCount=3)
 
 	def start(self):
-		print('sending credentials')
+		self.write_log('sending credentials')
 		super(SkypePing, self).__init__(self.username, self.password)
-		print('connect ok')
+		self.write_log('connect ok')
 		self.loop()
 
 	@staticmethod
@@ -52,6 +52,13 @@ class SkypePing(SkypeEventLoop):
 		return result_1 or result_2
 
 	@staticmethod
+	def write_log(content, level='info'):
+		try:
+			getattr(logger, level)(content)
+		except:
+			logger.error('error trying to write, "{}"'.format(level))
+
+	@staticmethod
 	def format_at_msg(content):
 		content = re.sub(r'<at.id="[a-zA-Z0-9_:\*\. \-]+">', '*@', content)
 		content = re.sub(r'</at>', '*', content)
@@ -62,14 +69,22 @@ class SkypePing(SkypeEventLoop):
 		quote_msg = re.findall(r'</legacyquote>(.*)<legacyquote>', content)
 		quote_msg_2 = re.findall(r'<legacyquote>(.*)</legacyquote>', content)
 		if quote_msg or quote_msg_2:
-			author = re.findall(r'authorname="([a-zA-Z ]*)"', content)[0]
+			author = re.findall(r'authorname="([a-zA-Z \-_0-9\.,]+)"', content)[0]
 			timestamp = float(re.findall(r'timestamp="([0-9 ]+)"', content)[0])
 			time_format = datetime.datetime.fromtimestamp(timestamp).strftime('%Y/%m/%d at %I:%M %p')
 			complement = re.findall(r'</quote>(.*)', content)[0]
 			complement = self.format_at_msg(complement)
+			quote = self.format_at_msg(quote_msg[0])
+
+			# remove extend text
+			quote = re.sub(
+				r'<e_m a="[a-zA-Z0-9_:\*\. \-]+".[a-zA-Z0-9_="]+.[a-zA-Z0-9_="]+.[a-zA-Z0-9_="]+></e_m>',
+				'',
+				quote
+			)
 
 			text_quote = '>>> _{quote}_ \n `{author}, {time_format}` \n {complement}'.format(
-				quote=self.format_at_msg(quote_msg[0]),
+				quote=quote,
 				author=author,
 				time_format=time_format,
 				complement=complement,
@@ -155,12 +170,18 @@ class SkypePing(SkypeEventLoop):
 					subject,
 					content,
 				)
-
+		attachment = [
+			{
+				'text': '',
+				'color': '#345',
+			},
+		]
 		payload = {
 			'username': SLACK_BOT_USERNAME,
 			'icon_url': SLACK_BOT_ICON,
 			'channel': channel,
 			'text': text,
+			# 'attachments': attachment, 
 		}
 
 		response = requests.post(SLACK_WEBHOOK, json=payload)
@@ -181,8 +202,8 @@ class SkypePing(SkypeEventLoop):
 			sky_msg = SKY_MSG_RESPONSE.replace('@user', subject)
 			sky_alternate_msg = SKY_MSG_RESPONSE_AT.replace('@user', subject)
 
-			logger.info(str(event.msg.content))
-			logger.info('******************')
+			self.write_log(str(event.msg.content))
+			self.write_log('******************')
 
 			if group_name:
 				response_type = 'auto_hi_group'
@@ -213,8 +234,7 @@ class SkypePing(SkypeEventLoop):
 				if SLACK_CHANNEL_PERSONAL:
 					self.fw_slack(event.msg, subject, group_name, channel=SLACK_CHANNEL_PERSONAL)
 
-			logger.debug(str(self._ids_reg))
-			logger.debug('---%%%%%%%----')
+			self.write_log(str(self._ids_reg), level='debug')
 
 
 def auto_reply(argv):
@@ -241,12 +261,12 @@ def auto_reply(argv):
 		if path:
 			print(log_path)
 		elif not os.path.exists(log_path):
-			print('file not found')
+			logger.info('file not found')
 		elif tail:
 			command = 'tail -f {}'.format(sk_ping.log_path)
 			process = subprocess.Popen(command.split())
 			output, error = process.communicate()
-			
+
 		elif clear:
 			backup_name = 'log_file_{}.log'.format(datetime.datetime.utcnow().date())
 			backup_path = '/tmp/{}'.format(backup_name)
@@ -275,5 +295,4 @@ if __name__ == '__main__':
 		lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
 		error = ''.join('!! ' + line for line in lines)
 		logger.error(error)
-		print(error)
 
