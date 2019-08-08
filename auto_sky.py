@@ -12,6 +12,7 @@ import requests
 from logzero import logger
 from skpy import SkypeEventLoop
 from skpy import SkypeNewMessageEvent
+from skpy.core import SkypeApiException
 
 from settings import SKYPE_SLACK_WRAPPER
 from settings import SKY_MSG_RESPONSE
@@ -69,7 +70,7 @@ class SkypePing(SkypeEventLoop):
 		quote_msg = re.findall(r'</legacyquote>(.*)<legacyquote>', content)
 		quote_msg_2 = re.findall(r'<legacyquote>(.*)</legacyquote>', content)
 		if quote_msg or quote_msg_2:
-			author = re.findall(r'authorname="([a-zA-Z \-_0-9\.,]+)"', content)[0]
+			author = re.findall(r'authorname="([a-zA-Z \-_0-9\.,\\]+)"?', content)[0]
 			timestamp = float(re.findall(r'timestamp="([0-9 ]+)"', content)[0])
 			time_format = datetime.datetime.fromtimestamp(timestamp).strftime('%Y/%m/%d at %I:%M %p')
 			complement = re.findall(r'</quote>(.*)', content)[0]
@@ -242,7 +243,7 @@ def auto_reply(argv):
 
 	args = ' '.join(argv)
 	print(args)
-	log, tail, path, clear = False, False, False, False
+	log, tail, path, clear, supervisor = False, False, False, False, False
 
 	if re.search(r'-log(?:\s+|$)', args):
 		log = True
@@ -255,6 +256,9 @@ def auto_reply(argv):
 
 	if re.search(r' -clear(?:\s+|$)', args):
 		clear = True
+
+	if re.search(r' -supervisor(?:\s+|$)', args):
+		supervisor = True
 
 	if log:
 		log_path = sk_ping.log_path
@@ -278,7 +282,28 @@ def auto_reply(argv):
 			command = 'cat {}'.format(sk_ping.log_path)
 			process = subprocess.Popen(command.split())
 			output, error = process.communicate()
-		return print('--- cmd---')
+		return logger.info('--- cmd---')
+	elif supervisor:
+		logger.info('run with supervisor')
+		infinite = False
+		if re.search(r' -inf(?:\s+|$)', args):
+			infinite = True
+		try:
+			sk_ping.start()
+		except SkypeApiException:
+			if infinite:
+				while 1:
+					try:
+						SkypePing(SKY_USERNAME, SKY_PASSWORD).start()
+					except SkypeApiException:
+						exc_type, exc_value, exc_traceback = sys.exc_info()
+						lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+						error = (''.join('!! ' + line for line in lines)).encode('utf-8')
+						logger.error(error)
+			# default 1 more time
+			return SkypePing(SKY_USERNAME, SKY_PASSWORD).start()
+
+		return 'supervisor end'
 
 	sk_ping.start()
 
@@ -286,7 +311,6 @@ def auto_reply(argv):
 if __name__ == '__main__':
 	try:
 		auto_reply(sys.argv)
-
 	except KeyboardInterrupt:
 		pass
 
