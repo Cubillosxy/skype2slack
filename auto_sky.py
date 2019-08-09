@@ -67,7 +67,7 @@ class SkypePing(SkypeEventLoop):
 
 	def format_msg_slack(self, content):
 
-		quote_msg = re.findall(r'</legacyquote>(.*)<legacyquote>', content)
+		quote_msg = re.findall(r'</legacyquote>([<>a-zA-Z ="/,\s\.\[\]\-0-9\(\)\\&:_;\']*)<legacyquote>', content)
 		quote_msg_2 = re.findall(r'<legacyquote>(.*)</legacyquote>', content)
 		if quote_msg or quote_msg_2:
 			author = re.findall(r'authorname="([a-zA-Z \-_0-9\.,\\]+)"?', content)[0]
@@ -75,7 +75,7 @@ class SkypePing(SkypeEventLoop):
 			time_format = datetime.datetime.fromtimestamp(timestamp).strftime('%Y/%m/%d at %I:%M %p')
 			complement = re.findall(r'</quote>(.*)', content)[0]
 			complement = self.format_at_msg(complement)
-			quote = self.format_at_msg(quote_msg[0])
+			quote = self.format_at_msg((quote_msg[0] or quote_msg_2[0]))
 
 			# remove extend text
 			quote = re.sub(
@@ -105,6 +105,9 @@ class SkypePing(SkypeEventLoop):
 
 		# format <i> _ msg
 		text_quote = re.sub(r'<i raw_pre="_" raw_post="_">|</i>', '_', text_quote)
+
+		# format &gt;
+		text_quote = re.sub(r'&gt;', '>', text_quote)
 
 		# TODO: replace skype emojis for slack
 		return text_quote
