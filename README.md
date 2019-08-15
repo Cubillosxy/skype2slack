@@ -1,4 +1,4 @@
-﻿Skype2Slack 
+﻿Skype2Slack  `alfa`
 =========
 <p align="center">
   <a href="https://opensource.org/licenses/MIT" alt="License: MIT">
@@ -8,7 +8,7 @@
 
 ---
 
-Reply msg from skype to Slack  `alfa`
+Reply msg from Skype to Slack , this project uses [SkPy](https://github.com/Terrance/SkPy)
 
 ![bot-preview](https://github.com/Cubillosxy/skype2slack/blob/master/library/skype-bot.png)
 
@@ -26,6 +26,9 @@ Reply msg from skype to Slack  `alfa`
 - `python auto_sky.py -log -tail` show last records in log file (real time update)
 
 - `python auto_sky.py -log -path` show path where log file lives
+
+- `python auto_sky.py -supervisor` run with supervisor 
+
 
 Edwin Cubillos Bohorquez, Colombia : edwin.cubillos@uptc.edu.co
 ----

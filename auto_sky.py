@@ -31,13 +31,14 @@ class SkypePing(SkypeEventLoop):
 		# Setup rotating logfile with 3 rotations, each with a maximum filesize of 1MB:
 		self.log_filename = 'skype_log.log'
 		self.log_path = '/tmp/{}'.format(self.log_filename)
+		self.token_path = '/tmp/{}'.format('skype_token')
 		self.username = username
 		self.password = password
 		logzero.logfile(self.log_path, maxBytes=1e6, backupCount=3)
 
 	def start(self):
 		self.write_log('sending credentials')
-		super(SkypePing, self).__init__(self.username, self.password)
+		super(SkypePing, self).__init__(self.username, self.password, self.token_path)
 		self.write_log('connect ok')
 		self.loop()
 
@@ -84,7 +85,7 @@ class SkypePing(SkypeEventLoop):
 				quote
 			)
 
-			text_quote = '>>> _{quote}_ \n `{author}, {time_format}` \n {complement}'.format(
+			text_quote = '>>>  {quote} <<< \n `{author}, {time_format}` \n {complement}'.format(
 				quote=quote,
 				author=author,
 				time_format=time_format,
