@@ -68,7 +68,7 @@ class SkypePing(SkypeEventLoop):
 
 	def format_msg_slack(self, content):
 
-		quote_msg = re.findall(r'</legacyquote>([<>a-zA-Z ="/,\s\.\[\]\-0-9\(\)\\&:_;\']*)<legacyquote>', content)
+		quote_msg = re.findall(r'</legacyquote>([<>a-zA-Z ="/,\s\.\[\]\-0-9\(\)\\&:_;\'|\?@\*\!%]*)<legacyquote>', content)
 		quote_msg_2 = re.findall(r'<legacyquote>(.*)</legacyquote>', content)
 		if quote_msg or quote_msg_2:
 			author = re.findall(r'authorname="([a-zA-Z \-_0-9\.,\\]+)"?', content)[0]
