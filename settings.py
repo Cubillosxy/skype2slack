@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-# settings
-import os
+""" Module to manage global project information """
 
 # time expire
 EXPIRE_MINUTES = 720
@@ -16,13 +15,14 @@ SLACK_WEBHOOK = ''
 SLACK_BOT_USERNAME = 'Skype Bot'
 SLACK_CHANNEL = ''
 SLACK_CHANNEL_PERSONAL = ''
-SLACK_BOT_ICON = 'https://store-images.s-microsoft.com/image/apps.21258.9007199266245651.2c55aa37-6559-4c49-aa18-f0c' \
-				 'a327494b9.f1b2b679-3b9c-423c-b395-4ea6ec3a9807?mode=scale&q=90&h=270&w=270&background=%230078D4'
-
+SLACK_BOT_ICON = ('https://store-images.s-microsoft.com/image/apps.21258.9007199266245651'
+                  '.2c55aa37-6559-4c49-aa18-f0ca327494b9.f1b2b679-3b9c-423c-b395-4ea6ec3a9807?'
+                  'mode=scale&q=90&h=270&w=270&background=%230078D4')
 
 # MSG for auto reply
-bot_msg = '(captainphasma) This message was generate automatically - sky-bot-edw. \n  (truck) sending to Slack. .. .'
-SKY_MSG_RESPONSE = 'hi @user , {}'.format(bot_msg)
+BOQ_MSG = ('(captainphasma) This message was generate automatically '
+           '- sky-bot-edw. \n  (truck) sending to Slack. .. .')
+SKY_MSG_RESPONSE = 'hi @user , {}'.format(BOQ_MSG)
 
 SKY_MSG_RESPONSE_AT = '@user sorry, I am a bot :/'
 
@@ -30,6 +30,6 @@ SKY_MSG_RESPONSE_AT = '@user sorry, I am a bot :/'
 SKYPE_SLACK_WRAPPER = {}
 
 try:
-	from local_settings import *
+    from local_settings import *  # used to load config pylint: disable=wildcard-import
 except ImportError:
-	print('not local settings')
+    print('not local settings')
