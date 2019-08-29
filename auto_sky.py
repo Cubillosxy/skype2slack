@@ -327,8 +327,7 @@ def auto_reply(argv: list) -> None or str:
     path = re.search(r' -path(?:\s+|$)', args)
     clear = re.search(r' -clear(?:\s+|$)', args)
 
-    if log:
-        sk_ping = SkypePing(SKY_USERNAME, SKY_PASSWORD)
+    sk_ping = SkypePing(SKY_USERNAME, SKY_PASSWORD)
 
     logger.info(msg='run on %s' % ('supervisor' if supervisor else 'log'))
 
@@ -372,6 +371,8 @@ def auto_reply(argv: list) -> None or str:
             logger.error(error)
             SkypePing(SKY_USERNAME, SKY_PASSWORD).start()
 
+    else:
+        sk_ping.start()
     logger.info('--- cmd---')
     return 'process end'
 
