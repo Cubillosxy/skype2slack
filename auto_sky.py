@@ -376,11 +376,14 @@ def auto_reply(argv: list) -> None or str:
     return 'process end'
 
 
-def run() -> None:
+if __name__ == '__main__':
     """ Function to execute Sky Bot """
     try:
         auto_reply(sys.argv)
-    except (ValueError, TypeError, AttributeError):
+    except KeyboardInterrupt:
+        pass
+
+    except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
         error = (''.join('!! ' + line for line in lines)).encode('utf-8')
